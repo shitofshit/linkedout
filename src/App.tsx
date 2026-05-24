@@ -1,9 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Header } from './components/Header';
 import { ImageDropzone, type UploadedImage } from './components/ImageDropzone';
 import { DescriptionInput } from './components/DescriptionInput';
 import { PostPreview } from './components/PostPreview';
-import { generateDraft, type GroundingSource } from './lib/api';
+import {
+  fetchAuthStatus,
+  generateDraft,
+  logout,
+  publishPost,
+  type AuthStatus,
+  type GroundingSource,
+} from './lib/api';
 
 export default function App() {
   const [images, setImages] = useState<UploadedImage[]>([]);
@@ -13,11 +20,23 @@ export default function App() {
   const [sources, setSources] = useState<GroundingSource[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  const [auth, setAuth] = useState<AuthStatus | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishedUrn, setPublishedUrn] = useState<string | null>(null);
+
+  // Load auth state on mount.
+  useEffect(() => {
+    fetchAuthStatus()
+      .then(setAuth)
+      .catch(() => setAuth({ authed: false }));
+  }, []);
+
   const canGenerate = images.length > 0 && description.trim().length > 0 && !isGenerating;
 
   async function handleGenerate() {
     setIsGenerating(true);
     setError(null);
+    setPublishedUrn(null);
     try {
       const res = await generateDraft(description.trim(), images);
       setDraft(res.draft);
@@ -29,9 +48,28 @@ export default function App() {
     }
   }
 
+  async function handlePublish() {
+    if (!draft) return;
+    setIsPublishing(true);
+    setError(null);
+    try {
+      const res = await publishPost(draft.trim(), images);
+      setPublishedUrn(res.postUrn);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to publish');
+    } finally {
+      setIsPublishing(false);
+    }
+  }
+
+  async function handleLogout() {
+    await logout();
+    setAuth({ authed: false });
+  }
+
   return (
     <div className="min-h-dvh text-zinc-900 dark:text-zinc-100">
-      <Header />
+      <Header auth={auth} onLogout={handleLogout} />
       <main
         className="mx-auto max-w-2xl px-4 sm:px-6"
         style={{
@@ -88,13 +126,18 @@ export default function App() {
             images={images}
             sources={sources}
             isRegenerating={isGenerating}
+            isPublishing={isPublishing}
+            publishedUrn={publishedUrn}
+            authed={auth?.authed === true}
             error={error}
             onDraftChange={setDraft}
             onRegenerate={handleGenerate}
+            onPublish={handlePublish}
             onBack={() => {
               setDraft(null);
               setSources([]);
               setError(null);
+              setPublishedUrn(null);
             }}
           />
         )}

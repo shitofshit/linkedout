@@ -8,6 +8,20 @@ export type GenerateResponse = {
   sources: GroundingSource[];
 };
 
+async function unwrap<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    let message = `Request failed with status ${res.status}`;
+    try {
+      const body = (await res.json()) as { error?: string };
+      if (body.error) message = body.error;
+    } catch {
+      // body wasn't JSON
+    }
+    throw new Error(message);
+  }
+  return (await res.json()) as T;
+}
+
 export async function generateDraft(
   description: string,
   images: UploadedImage[],
@@ -20,17 +34,34 @@ export async function generateDraft(
     body: JSON.stringify({ description, images: prepared }),
   });
 
-  if (!res.ok) {
-    const fallback = `Request failed with status ${res.status}`;
-    let message = fallback;
-    try {
-      const body = (await res.json()) as { error?: string };
-      if (body.error) message = body.error;
-    } catch {
-      // body wasn't JSON
-    }
-    throw new Error(message);
-  }
+  return unwrap<GenerateResponse>(res);
+}
 
-  return (await res.json()) as GenerateResponse;
+export type AuthStatus =
+  | { authed: false }
+  | { authed: true; sub?: string; name?: string; picture?: string; email?: string };
+
+export async function fetchAuthStatus(): Promise<AuthStatus> {
+  const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
+  return unwrap<AuthStatus>(res);
+}
+
+export async function logout(): Promise<void> {
+  await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
+}
+
+export type PublishResponse = { ok: true; postUrn: string };
+
+export async function publishPost(
+  text: string,
+  images: UploadedImage[],
+): Promise<PublishResponse> {
+  const prepared = await Promise.all(images.map((img) => prepareImageForUpload(img.file)));
+  const res = await fetch('/api/publish', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    credentials: 'same-origin',
+    body: JSON.stringify({ text, images: prepared }),
+  });
+  return unwrap<PublishResponse>(res);
 }

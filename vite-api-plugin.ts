@@ -38,10 +38,27 @@ function toWebRequest(req: IncomingMessage, body: string): Request {
 
 async function sendWebResponse(res: ServerResponse, webRes: Response): Promise<void> {
   res.statusCode = webRes.status;
-  webRes.headers.forEach((value, key) => res.setHeader(key, value));
-  const text = await webRes.text();
-  res.end(text);
+  // Headers.getSetCookie() returns each Set-Cookie individually (multiple allowed).
+  const setCookies =
+    typeof (webRes.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie === 'function'
+      ? (webRes.headers as unknown as { getSetCookie: () => string[] }).getSetCookie()
+      : [];
+  webRes.headers.forEach((value, key) => {
+    if (key.toLowerCase() === 'set-cookie') return; // handled below
+    res.setHeader(key, value);
+  });
+  if (setCookies.length > 0) res.setHeader('set-cookie', setCookies);
+  const buf = Buffer.from(await webRes.arrayBuffer());
+  res.end(buf);
 }
+
+type Env = {
+  GEMINI_API_KEY?: string;
+  LINKEDIN_CLIENT_ID?: string;
+  LINKEDIN_CLIENT_SECRET?: string;
+  LINKEDIN_REDIRECT_URI?: string;
+  SESSION_SECRET?: string;
+};
 
 export function apiDevPlugin(): Plugin {
   return {
@@ -50,16 +67,69 @@ export function apiDevPlugin(): Plugin {
       const middleware: Connect.NextHandleFunction = async (req, res, next) => {
         if (!req.url?.startsWith('/api/')) return next();
 
+        const env = process.env as Env;
+
         try {
           const route = req.url.split('?')[0];
+          const body = await readBody(req);
+          const webReq = toWebRequest(req, body);
+
+          let webRes: Response | null = null;
+
           if (route === '/api/generate') {
-            const { handleGenerate } = await server.ssrLoadModule('/api/_generate.ts');
-            const body = await readBody(req);
-            const webReq = toWebRequest(req, body);
-            const webRes = await (handleGenerate as typeof import('./api/_generate').handleGenerate)(
-              webReq,
-              process.env.GEMINI_API_KEY,
-            );
+            const mod = await server.ssrLoadModule('/api/_generate.ts');
+            webRes = await (mod.handleGenerate as (
+              r: Request,
+              key: string | undefined,
+            ) => Promise<Response>)(webReq, env.GEMINI_API_KEY);
+          } else if (route === '/api/oauth/start') {
+            const mod = await server.ssrLoadModule('/api/oauth/start.ts');
+            webRes = await (mod.handleStart as (
+              r: Request,
+              env: {
+                clientId?: string;
+                redirectUri?: string;
+                sessionSecret?: string;
+              },
+            ) => Promise<Response>)(webReq, {
+              clientId: env.LINKEDIN_CLIENT_ID,
+              redirectUri: env.LINKEDIN_REDIRECT_URI,
+              sessionSecret: env.SESSION_SECRET,
+            });
+          } else if (route === '/api/oauth/callback') {
+            const mod = await server.ssrLoadModule('/api/oauth/callback.ts');
+            webRes = await (mod.handleCallback as (
+              r: Request,
+              env: {
+                clientId?: string;
+                clientSecret?: string;
+                redirectUri?: string;
+                sessionSecret?: string;
+              },
+            ) => Promise<Response>)(webReq, {
+              clientId: env.LINKEDIN_CLIENT_ID,
+              clientSecret: env.LINKEDIN_CLIENT_SECRET,
+              redirectUri: env.LINKEDIN_REDIRECT_URI,
+              sessionSecret: env.SESSION_SECRET,
+            });
+          } else if (route === '/api/auth/me') {
+            const mod = await server.ssrLoadModule('/api/auth/me.ts');
+            webRes = await (mod.handleMe as (
+              r: Request,
+              s: string | undefined,
+            ) => Promise<Response>)(webReq, env.SESSION_SECRET);
+          } else if (route === '/api/logout') {
+            const mod = await server.ssrLoadModule('/api/logout.ts');
+            webRes = (mod.handleLogout as (r: Request) => Response)(webReq);
+          } else if (route === '/api/publish') {
+            const mod = await server.ssrLoadModule('/api/publish.ts');
+            webRes = await (mod.handlePublish as (
+              r: Request,
+              s: string | undefined,
+            ) => Promise<Response>)(webReq, env.SESSION_SECRET);
+          }
+
+          if (webRes) {
             await sendWebResponse(res, webRes);
             return;
           }

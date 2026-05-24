@@ -9,9 +9,13 @@ type Props = {
   images: UploadedImage[];
   sources: GroundingSource[];
   isRegenerating: boolean;
+  isPublishing: boolean;
+  publishedUrn: string | null;
+  authed: boolean;
   error: string | null;
   onDraftChange: (value: string) => void;
   onRegenerate: () => void;
+  onPublish: () => void;
   onBack: () => void;
 };
 
@@ -20,9 +24,13 @@ export function PostPreview({
   images,
   sources,
   isRegenerating,
+  isPublishing,
+  publishedUrn,
+  authed,
   error,
   onDraftChange,
   onRegenerate,
+  onPublish,
   onBack,
 }: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -175,17 +183,61 @@ export function PostPreview({
         </button>
       </div>
 
-      <button
-        type="button"
-        disabled={overLimit || draft.trim().length === 0}
-        title="LinkedIn publishing comes in Phase 3"
-        className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 px-4 text-[15px] font-semibold text-white transition-transform hover:bg-teal-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-400 motion-reduce:transition-none motion-reduce:active:scale-100 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-600"
-      >
-        <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
-          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.119 20.452H3.554V9h3.565v11.452z" />
-        </svg>
-        Post to LinkedIn
-      </button>
+      {publishedUrn ? (
+        <div
+          role="status"
+          className="rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm dark:border-teal-900/50 dark:bg-teal-950/40"
+        >
+          <div className="flex items-center gap-2 font-semibold text-teal-800 dark:text-teal-200">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+            Posted to LinkedIn
+          </div>
+          <p className="mt-1 text-xs text-teal-700/80 dark:text-teal-300/80">
+            <a
+              href="https://www.linkedin.com/feed/"
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              Open your feed
+            </a>{' '}
+            to view it.
+          </p>
+        </div>
+      ) : authed ? (
+        <button
+          type="button"
+          onClick={onPublish}
+          disabled={overLimit || draft.trim().length === 0 || isPublishing || isRegenerating}
+          className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-[#0a66c2] px-4 text-[15px] font-semibold text-white transition-transform hover:bg-[#084e96] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-400 motion-reduce:transition-none motion-reduce:active:scale-100 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-600"
+        >
+          {isPublishing ? (
+            <>
+              <Spinner />
+              Posting…
+            </>
+          ) : (
+            <>
+              <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.119 20.452H3.554V9h3.565v11.452z" />
+              </svg>
+              Post to LinkedIn
+            </>
+          )}
+        </button>
+      ) : (
+        <a
+          href="/api/oauth/start"
+          className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-[#0a66c2] px-4 text-[15px] font-semibold text-white transition-transform hover:bg-[#084e96] active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.119 20.452H3.554V9h3.565v11.452z" />
+          </svg>
+          Sign in to publish
+        </a>
+      )}
     </div>
   );
 }

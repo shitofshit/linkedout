@@ -5,7 +5,14 @@ import { apiDevPlugin } from './vite-api-plugin';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  for (const key of ['GEMINI_API_KEY', 'GEMINI_MODEL']) {
+  for (const key of [
+    'GEMINI_API_KEY',
+    'GEMINI_MODEL',
+    'LINKEDIN_CLIENT_ID',
+    'LINKEDIN_CLIENT_SECRET',
+    'LINKEDIN_REDIRECT_URI',
+    'SESSION_SECRET',
+  ]) {
     if (env[key] && !process.env[key]) process.env[key] = env[key];
   }
 
