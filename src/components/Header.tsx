@@ -54,7 +54,7 @@ function AuthBadge({ auth, onLogout }: Props) {
   return <ProfileMenu auth={auth} onLogout={onLogout} />;
 }
 
-function ProfileMenu({ auth, onLogout }: { auth: AuthStatus; onLogout: () => void }) {
+function ProfileMenu({ auth, onLogout }: { auth: Extract<AuthStatus, { authed: true }>; onLogout: () => void }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
