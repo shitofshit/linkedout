@@ -3,6 +3,22 @@ import type { UploadedImage } from '../components/ImageDropzone';
 
 export type GroundingSource = { title: string; uri: string };
 
+export type PostBrief = {
+  whatHappened: string;
+  takeaway: string;
+  tone: '' | 'professional' | 'casual' | 'inspirational' | 'technical';
+  callToAction: string;
+  hashtags: string;
+};
+
+export const EMPTY_BRIEF: PostBrief = {
+  whatHappened: '',
+  takeaway: '',
+  tone: '',
+  callToAction: '',
+  hashtags: '',
+};
+
 export type GenerateResponse = {
   draft: string;
   sources: GroundingSource[];
@@ -23,7 +39,7 @@ async function unwrap<T>(res: Response): Promise<T> {
 }
 
 export async function generateDraft(
-  description: string,
+  brief: PostBrief,
   images: UploadedImage[],
 ): Promise<GenerateResponse> {
   const prepared = await Promise.all(images.map((img) => prepareImageForUpload(img.file)));
@@ -31,7 +47,7 @@ export async function generateDraft(
   const res = await fetch('/api/generate', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ description, images: prepared }),
+    body: JSON.stringify({ brief, images: prepared }),
   });
 
   return unwrap<GenerateResponse>(res);

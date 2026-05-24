@@ -2,14 +2,26 @@ import { GoogleGenAI } from '@google/genai';
 import { SYSTEM_PROMPT } from './_prompt';
 
 const MAX_IMAGES = 5;
-const MAX_DESCRIPTION = 500;
+const MAX_WHAT = 500;
+const MAX_TAKEAWAY = 240;
+const MAX_CTA = 160;
+const MAX_HASHTAGS = 160;
 const MAX_INLINE_BYTES = 4 * 1024 * 1024;
 const ALLOWED_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const ALLOWED_TONES = new Set(['', 'professional', 'casual', 'inspirational', 'technical']);
 const DEFAULT_MODEL = 'gemini-2.5-flash';
 
 type GenerateRequest = {
-  description?: unknown;
+  brief?: unknown;
   images?: unknown;
+};
+
+type Brief = {
+  whatHappened: string;
+  takeaway: string;
+  tone: string;
+  callToAction: string;
+  hashtags: string;
 };
 
 type ImagePayload = {
@@ -41,6 +53,16 @@ function extractPost(raw: string): string {
   return raw.trim();
 }
 
+function formatBrief(b: Brief): string {
+  const lines: string[] = [];
+  lines.push(`What happened: ${b.whatHappened}`);
+  if (b.takeaway) lines.push(`Key takeaway: ${b.takeaway}`);
+  if (b.tone) lines.push(`Tone: ${b.tone}`);
+  if (b.callToAction) lines.push(`Call to action: ${b.callToAction}`);
+  if (b.hashtags) lines.push(`Hashtags to use: ${b.hashtags}`);
+  return lines.join('\n');
+}
+
 export async function handleGenerate(req: Request, apiKey: string | undefined): Promise<Response> {
   if (req.method !== 'POST') {
     return jsonResponse(405, { error: 'Method not allowed' });
@@ -56,11 +78,25 @@ export async function handleGenerate(req: Request, apiKey: string | undefined): 
     return jsonResponse(400, { error: 'Invalid JSON body' });
   }
 
-  const description = typeof body.description === 'string' ? body.description.trim() : '';
-  if (!description) return jsonResponse(400, { error: 'description is required' });
-  if (description.length > MAX_DESCRIPTION) {
-    return jsonResponse(400, { error: `description must be <= ${MAX_DESCRIPTION} chars` });
+  const briefRaw = body.brief;
+  if (!briefRaw || typeof briefRaw !== 'object') {
+    return jsonResponse(400, { error: 'brief is required' });
   }
+  const b = briefRaw as Record<string, unknown>;
+  const whatHappened = typeof b.whatHappened === 'string' ? b.whatHappened.trim() : '';
+  const takeaway = typeof b.takeaway === 'string' ? b.takeaway.trim() : '';
+  const tone = typeof b.tone === 'string' ? b.tone.trim() : '';
+  const callToAction = typeof b.callToAction === 'string' ? b.callToAction.trim() : '';
+  const hashtags = typeof b.hashtags === 'string' ? b.hashtags.trim() : '';
+
+  if (!whatHappened) return jsonResponse(400, { error: 'whatHappened is required' });
+  if (whatHappened.length > MAX_WHAT) return jsonResponse(400, { error: `whatHappened must be <= ${MAX_WHAT} chars` });
+  if (takeaway.length > MAX_TAKEAWAY) return jsonResponse(400, { error: `takeaway must be <= ${MAX_TAKEAWAY} chars` });
+  if (callToAction.length > MAX_CTA) return jsonResponse(400, { error: `callToAction must be <= ${MAX_CTA} chars` });
+  if (hashtags.length > MAX_HASHTAGS) return jsonResponse(400, { error: `hashtags must be <= ${MAX_HASHTAGS} chars` });
+  if (!ALLOWED_TONES.has(tone)) return jsonResponse(400, { error: `unsupported tone: ${tone}` });
+
+  const brief: Brief = { whatHappened, takeaway, tone, callToAction, hashtags };
 
   if (!Array.isArray(body.images) || body.images.length === 0) {
     return jsonResponse(400, { error: 'at least one image is required' });
@@ -95,7 +131,7 @@ export async function handleGenerate(req: Request, apiKey: string | undefined): 
           role: 'user',
           parts: [
             ...images.map((img) => ({ inlineData: { mimeType: img.mimeType, data: img.data } })),
-            { text: `Description: ${description}` },
+            { text: formatBrief(brief) },
           ],
         },
       ],

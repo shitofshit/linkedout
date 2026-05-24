@@ -1,20 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { Header } from './components/Header';
 import { ImageDropzone, type UploadedImage } from './components/ImageDropzone';
-import { DescriptionInput } from './components/DescriptionInput';
+import { PostBriefForm } from './components/PostBriefForm';
 import { PostPreview } from './components/PostPreview';
 import {
+  EMPTY_BRIEF,
   fetchAuthStatus,
   generateDraft,
   logout,
   publishPost,
   type AuthStatus,
   type GroundingSource,
+  type PostBrief,
 } from './lib/api';
 
 export default function App() {
   const [images, setImages] = useState<UploadedImage[]>([]);
-  const [description, setDescription] = useState('');
+  const [brief, setBrief] = useState<PostBrief>(EMPTY_BRIEF);
   const [isGenerating, setIsGenerating] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
   const [sources, setSources] = useState<GroundingSource[]>([]);
@@ -32,14 +34,14 @@ export default function App() {
       .catch(() => setAuth({ authed: false }));
   }, []);
 
-  const canGenerate = images.length > 0 && description.trim().length > 0 && !isGenerating;
+  const canGenerate = images.length > 0 && brief.whatHappened.trim().length > 0 && !isGenerating;
 
   async function handleGenerate() {
     setIsGenerating(true);
     setError(null);
     setPublishedUrn(null);
     try {
-      const res = await generateDraft(description.trim(), images);
+      const res = await generateDraft(brief, images);
       setDraft(res.draft);
       setSources(res.sources);
     } catch (e) {
@@ -84,7 +86,7 @@ export default function App() {
         {draft === null ? (
           <div className="space-y-6">
             <ImageDropzone images={images} onChange={setImages} />
-            <DescriptionInput value={description} onChange={setDescription} />
+            <PostBriefForm value={brief} onChange={setBrief} />
             {error && (
               <div
                 role="alert"
@@ -120,7 +122,7 @@ export default function App() {
               <p className="text-center text-xs text-zinc-500 dark:text-zinc-500">
                 {images.length === 0
                   ? 'Add at least one photo to begin.'
-                  : 'Add a sentence about what happened.'}
+                  : 'Tell us what happened to begin.'}
               </p>
             )}
           </div>
