@@ -16,6 +16,7 @@ type Props = {
   onDraftChange: (value: string) => void;
   onRegenerate: () => void;
   onPublish: () => void;
+  onRepost: () => void;
   onBack: () => void;
 };
 
@@ -31,6 +32,7 @@ export function PostPreview({
   onDraftChange,
   onRegenerate,
   onPublish,
+  onRepost,
   onBack,
 }: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -205,6 +207,13 @@ export function PostPreview({
             </a>{' '}
             to view it.
           </p>
+          <button
+            type="button"
+            onClick={onRepost}
+            className="mt-2 text-xs font-medium text-teal-800 underline hover:no-underline dark:text-teal-200"
+          >
+            Edit and post another version
+          </button>
         </div>
       ) : authed ? (
         <button

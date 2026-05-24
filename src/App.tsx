@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Header } from './components/Header';
 import { ImageDropzone, type UploadedImage } from './components/ImageDropzone';
 import { DescriptionInput } from './components/DescriptionInput';
@@ -23,6 +23,7 @@ export default function App() {
   const [auth, setAuth] = useState<AuthStatus | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishedUrn, setPublishedUrn] = useState<string | null>(null);
+  const publishInFlight = useRef(false);
 
   // Load auth state on mount.
   useEffect(() => {
@@ -50,6 +51,8 @@ export default function App() {
 
   async function handlePublish() {
     if (!draft) return;
+    if (publishInFlight.current) return;
+    publishInFlight.current = true;
     setIsPublishing(true);
     setError(null);
     try {
@@ -59,6 +62,7 @@ export default function App() {
       setError(e instanceof Error ? e.message : 'Failed to publish');
     } finally {
       setIsPublishing(false);
+      publishInFlight.current = false;
     }
   }
 
@@ -133,6 +137,7 @@ export default function App() {
             onDraftChange={setDraft}
             onRegenerate={handleGenerate}
             onPublish={handlePublish}
+            onRepost={() => setPublishedUrn(null)}
             onBack={() => {
               setDraft(null);
               setSources([]);
