@@ -1,0 +1,265 @@
+{
+  "info": {
+    "_postman_id": "99b7ceb7-0711-46c2-9a84-914d897599cb",
+    "name": "LinkedOut",
+    "description": "Wilson's LinkedOut API Test Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "55120273",
+    "_collection_link": "https://go.postman.co/collection/55120273-99b7ceb7-0711-46c2-9a84-914d897599cb?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Get User Info",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{lkd_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://api.linkedin.com/v2/userinfo",
+          "protocol": "https",
+          "host": [
+            "api",
+            "linkedin",
+            "com"
+          ],
+          "path": [
+            "v2",
+            "userinfo"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Post a text",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{lkd_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Restli-Protocol-Version",
+            "value": "2.0.0",
+            "type": "text"
+          },
+          {
+            "key": "LinkedIn-Version",
+            "value": "202605",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "  {\r\n    \"author\": \"urn:li:person:{{lkd_sub}}\",\r\n    \"commentary\": \"Testing Linkedout 🚀 — this post was sent from Postman.\",\r\n    \"visibility\": \"PUBLIC\",\r\n    \"distribution\": {\r\n      \"feedDistribution\": \"MAIN_FEED\",\r\n      \"targetEntities\": []\r\n    },\r\n    \"lifecycleState\": \"PUBLISHED\",\r\n    \"isReshareDisabledByAuthor\": false\r\n  }\r\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://api.linkedin.com/rest/posts",
+          "protocol": "https",
+          "host": [
+            "api",
+            "linkedin",
+            "com"
+          ],
+          "path": [
+            "rest",
+            "posts"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Initialize Image Upload",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{lkd_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Restli-Protocol-Version",
+            "value": "2.0.0",
+            "type": "text"
+          },
+          {
+            "key": "LinkedIn-Version",
+            "value": "202605",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "  {\r\n    \"initializeUploadRequest\": {\r\n      \"owner\": \"urn:li:person:{{lkd_sub}}\"\r\n    }\r\n  }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://api.linkedin.com/rest/images?action=initializeUpload",
+          "protocol": "https",
+          "host": [
+            "api",
+            "linkedin",
+            "com"
+          ],
+          "path": [
+            "rest",
+            "images"
+          ],
+          "query": [
+            {
+              "key": "action",
+              "value": "initializeUpload"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Upload Image",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{lkd_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PUT",
+        "header": [
+          {
+            "key": "X-Restli-Protocol-Version",
+            "value": "2.0.0",
+            "type": "text"
+          },
+          {
+            "key": "LinkedIn-Version",
+            "value": "202605",
+            "type": "text",
+            "disabled": true
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "file",
+          "file": {
+            "src": "/C:/Users/Wilson/Pictures/Screenshots/Screenshot 2025-09-08 193722.png"
+          }
+        },
+        "url": {
+          "raw": "{{lkd_upload_url}}",
+          "host": [
+            "{{lkd_upload_url}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Post with uploaded image",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{lkd_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Restli-Protocol-Version",
+            "value": "2.0.0",
+            "type": "text"
+          },
+          {
+            "key": "LinkedIn-Version",
+            "value": "202605",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"author\": \"urn:li:person:{{lkd_sub}}\",\r\n    \"commentary\": \"Linkedout image-post test 📸\",\r\n    \"visibility\": \"PUBLIC\",\r\n    \"distribution\": {\r\n      \"feedDistribution\": \"MAIN_FEED\",\r\n      \"targetEntities\": []\r\n    },\r\n    \"content\": {\r\n      \"media\": {\r\n        \"title\": \"test image\",\r\n        \"id\": \"{{lkd_image_urn}}\"\r\n      }\r\n    },\r\n    \"lifecycleState\": \"PUBLISHED\",\r\n    \"isReshareDisabledByAuthor\": false\r\n  }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://api.linkedin.com/rest/posts",
+          "protocol": "https",
+          "host": [
+            "api",
+            "linkedin",
+            "com"
+          ],
+          "path": [
+            "rest",
+            "posts"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
